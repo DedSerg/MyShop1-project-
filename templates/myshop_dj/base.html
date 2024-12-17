@@ -1,0 +1,89 @@
+{% load static %}  <!-- Загружаем библиотеку статических файлов -->
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Мой сайт{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}"> <!-- Подключение вашего CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"> <!-- Подключение Bootstrap -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">  <!--  Подключить Font Awesome-->
+    <style>
+        /* Вставьте сюда дополнительные стили, если необходимо */
+        body {
+            background-image: url("{% static 'images/DеDушкин магазин.jpg' %}"); /* Устанавливаем фоновое изображение */
+            background-size: cover; /* Обеспечивает полное покрытие фона */
+            background-position: center; /* Центрирует изображение */
+            background-repeat: no-repeat; /* Запрещает повторение изображения */
+        }
+        .footer-text {
+            font-size: 0.8rem; /* Уменьшение размера шрифта */
+            color: #666; /* Цвет текста */
+            margin: 0; /* Убираем отступы */
+        }
+        .product-card {
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 15px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s;
+            width: calc(33.333% - 20px); /* Три карточки в ряд */
+            text-align: center; /* Центрирование текста */
+        }
+        .product-card:hover {
+            transform: scale(1.02); /* Увеличение карточки при наведении */
+        }
+        .product-image { max-width: 100%; height: auto; border-radius: 5px;}
+        .btn {
+            display: inline-block;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-decoration: none;
+            color: #fff;
+            font-weight: bold;
+        }
+        .btn-primary { background-color: #007bff; }
+        .btn-secondary { background-color: #6c757d; }
+        .btn-success { background-color: #28a745; margin-top: 10px; }
+        /* Стили для заголовков продуктов */
+        .product-name { font-size: 1.2em; font-weight: bold; margin-bottom: 10px; }
+        /* Адаптивность */
+        @media (max-width: 768px) {
+            .product-card { width: calc(50% - 20px); }
+        } /* Две карточки в ряд на средних экранах */
+        @media (max-width: 480px) {
+            .product-card { width: 100%; }
+        } /* Одна карточка в ряд на маленьких экранах */
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1 class="mt-5 text-center text-primary">DеDушкин магазин</h1>
+            <div class="button-container">
+                <li>
+                    <a href="{% url 'profile' %}">
+                        <i class="fa fa-user"></i> Профиль
+                    </a>
+                </li>
+            </div>
+        </div>
+    </header>
+
+    <main class="container mt-4">
+        {% block content %}
+        <!-- Основное содержимое страницы будет вставлено сюда -->
+        {% endblock %}
+    </main>
+
+    <footer class="text-center mt-4">
+        <p class="footer-text">&copy; 2023 The "DeD" group. Все права защищены.</p>
+    </footer>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.0.7/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>

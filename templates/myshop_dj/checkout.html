@@ -1,0 +1,46 @@
+{% extends 'myshop_dj/base.html' %}
+
+{% block title %}Оформление заказа{% endblock %}
+
+{% block content %}
+
+<div class="navigation mb-3">
+    <a href="{% url 'home' %}" class="btn btn-secondary">Вернуться на главную</a>
+</div>
+<h1>Оформление заказа</h1>
+
+<form method="post" action="{% url 'process_order' %}">
+    {% csrf_token %}
+
+    <h3>Ваши товары:</h3>
+    <ul>
+         {% if cart_items %}
+        {% for item in cart_items %}
+            <li>{{ item.product.name }} - {{ item.quantity }} шт. - {{ item.product.price }} руб.</li>
+        {% endfor %}
+    {% else %}
+        <li>Ваша корзина пуста.</li>
+    {% endif %}
+    </ul>
+
+    <h3>Информация о заказчике:</h3>
+    <label for="name">Имя:</label>
+    <input type="text" name="name" required placeholder="Введите ваше имя">
+
+    <label for="email">Электронная почта:</label>
+    <input type="email" name="email" required placeholder="Введите вашу электронную почту">
+
+    <label for="phone_number">Телефон:</label>
+    <input type="text" name="phone_number" required placeholder="Введите номер телефона" pattern="\d{10}" title="Введите 10 цифр без пробелов и символов">
+
+    <h3>Адрес доставки:</h3>
+    <input type="text" name="shipping_address" required placeholder="Введите адрес доставки">
+
+    <h3>Информация о платеже:</h3>
+    <label for="card_number">Номер карты:</label>
+    <input type="text" name="card_number" required placeholder="Номер карты" maxlength="16" pattern="\d{16}">
+
+    <button type="submit" class="btn btn-success">Подтвердить заказ</button>
+</form>
+
+{% endblock %}

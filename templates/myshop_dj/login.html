@@ -1,0 +1,16 @@
+{% extends 'myshop_dj/base.html' %}
+
+{% load static %}  <!-- Загрузка библиотеки статических файлов -->
+
+{% block title %}Вход{% endblock %}  <!-- Заголовок страницы -->
+
+{% block content %}
+    <h1>Вход</h1>
+    <link rel="stylesheet" type="text/css" href="{% static 'style.css' %}">
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}  <!-- Отображение формы -->
+        <button type="submit">Войти</button>
+    </form>
+    <a href="{% url 'register' %}">Регистрация</a>
+{% endblock %}

@@ -1,0 +1,39 @@
+{% extends 'myshop_dj/base.html' %}
+{% load custom_filters %}
+
+{% block content %}
+
+<div class="container mt-5">
+    <div class="navigation mb-3">
+        <a href="{% url 'home' %}" class="btn btn-secondary">Вернуться на главную</a>
+    </div>
+
+    <h1>Спасибо за ваш заказ!</h1>
+    <p>Ваш заказ был успешно оформлен. Ниже представлены его детали:</p>
+
+    <h2>Детали заказа</h2>
+    <ul class="list-group mb-4">
+        {% if cart_items %}
+            {% for item in cart_items %}
+                <li class="list-group-item">
+                    <strong>{{ item.product.name }}</strong> - {{ item.quantity }} шт. - {{ item.product.price }} руб.
+                    <strong>Итого: {{ item.quantity|multiply:item.product.price }} руб.</strong>
+                </li>
+            {% endfor %}
+        {% else %}
+            <li class="list-group-item">Нет элементов в заказе.</li>
+        {% endif %}
+    </ul>
+
+    <h3>Общая стоимость:</h3>
+    <p><strong>{{ total_price }} руб.</strong></p>
+
+    <h2>Информация о доставке</h2>
+    <p><strong>Адрес доставки:</strong> {{ order.shipping_address }}</p>
+    <p><strong>Email для связи:</strong> {{ order.email }}</p>
+    <p><strong>Телефон для связи:</strong> {{ order.phone_number }}</p>
+
+    <p class="mt-4">Если у вас есть какие-либо вопросы, пожалуйста, свяжитесь с нашей службой поддержки.</p>
+</div>
+
+{% endblock %}
