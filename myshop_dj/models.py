@@ -1,6 +1,9 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+
 
 # Модель Категории
 class Category(models.Model):
@@ -21,7 +24,7 @@ class Cart(models.Model):
 
 # Модель Продукта
 class Product(models.Model):
-    name = models.CharField(max_length=100, unique=True)
+    name = models.CharField(max_length=255, unique=True)
     description = models.TextField()
     price = models.DecimalField(max_digits=10, decimal_places=2)
     category = models.ForeignKey('Category', related_name='products', on_delete=models.CASCADE)
@@ -59,31 +62,34 @@ class CartItem(models.Model):
             self.quantity -= 1
             self.save()
 
+    @property
+    def total_price(self):
+        return self.product.price * self.quantity
+
 # Модель Заказа
 class Order(models.Model):
-    name = models.CharField(max_length=100)
-    shipping_address = models.TextField()
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='orders')
+    full_name = models.CharField(max_length=255)
+    address = models.CharField(max_length=255, default='Не указано')
+    phone_number = models.CharField(max_length=20)
     email = models.EmailField()
-    phone_number = models.CharField(max_length=15)
+    additional_info = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"Order by {self.name} on {self.created_at}"
+        return f'Заказ #{self.id} от {self.user.username}'
 
 # Модель Элемента Заказа
 class OrderItem(models.Model):
     order = models.ForeignKey(Order, related_name='items', on_delete=models.CASCADE)
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
-    quantity = models.PositiveIntegerField(default=1)
-
-    def total_price(self):
-        return self.product.price * self.quantity
-
+    quantity = models.PositiveIntegerField()
+    price = models.DecimalField(max_digits=10, decimal_places=2, default=0)  # Цена на момент заказа
     def __str__(self):
-        return f"{self.product.name} (x{self.quantity})"
+        return f"{self.quantity} x {self.product.name}"
 
 class UserProfile(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
     profile_picture = models.ImageField(upload_to='profile_pictures/', default='default.jpg')  # Укажите путь для загрузки изображений
     date_of_birth = models.DateField(null=True, blank=True)  # Поле для даты рождения
     phone_number = models.CharField(max_length=15, null=True, blank=True)  # Поле для телефона
@@ -93,3 +99,10 @@ class UserProfile(models.Model):
 
     def __str__(self):
         return f"{self.user.username}'s Profile"
+
+
+@receiver(post_save, sender=User)
+def create_or_update_user_profile(sender, instance, created, **kwargs):
+    if created:
+        UserProfile.objects.create(user=instance)
+    instance.profile.save()

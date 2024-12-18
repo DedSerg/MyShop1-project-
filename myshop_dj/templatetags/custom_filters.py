@@ -22,3 +22,9 @@ def multiply(value, arg):
         return float(value) * float(arg)
     except (ValueError, TypeError):
         return ''  # Возвращаем пустую строку в случае ошибки
+
+
+@register.simple_tag
+def my_custom_tag():
+    """Возвращает строку 'Hello, World!'."""
+    return "Hello, World!"

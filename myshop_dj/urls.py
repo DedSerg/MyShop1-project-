@@ -1,33 +1,21 @@
+from django.urls import path, include
 from django.conf.urls.static import static
 from django.contrib.auth.views import LogoutView
-from django.urls import path
 from django.conf import settings
-
+from . import views
 from .views import (
-    product_list,
-    CategoryListAPIView,
-    CategoryDetailAPIView,
-    ProductListAPIView,
-    ProductDetailAPIView,
-    product_detail,
-    category_detail_view,
-    home,
-    register,
-    add_to_cart,
-    remove_from_cart,
-    cart_view,
-    update_cart,
-    checkout_view, process_order,
-    category_list,
-    order_complete, CustomLoginView, ProfileView,
-)
+    home, register, CustomLoginView, category_list, category_detail_view, product_list, product_detail,
+    CategoryListAPIView, CategoryDetailAPIView, ProductListAPIView, ProductDetailAPIView, add_to_cart, remove_from_cart,
+    update_cart, cart_view, checkout_view, process_order, order_complete)
 
 
 urlpatterns = [
+
     path('', home, name='home'),
     path('register/', register, name='register'),
     path('accounts/login/', CustomLoginView.as_view(), name='login'),
-    path('accounts/profile/', ProfileView.as_view(), name='profile'),
+    path('accounts/profile/', views.profile_view, name='profile'),
+    path('accounts/profile/edit/', views.edit_profile, name='edit_profile'),
     path('accounts/logout/', LogoutView.as_view(), name='logout'),
     path('categories/', category_list, name='category_list'),
     path('category/<int:category_id>/', category_detail_view, name='category_detail'),

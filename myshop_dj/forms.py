@@ -3,6 +3,7 @@ from django.contrib.auth.models import User
 from .models import UserProfile, Order
 from django.core.files.images import get_image_dimensions
 
+
 class UserRegistrationForm(forms.ModelForm):
     password = forms.CharField(widget=forms.PasswordInput, label='Пароль')
     password_confirm = forms.CharField(widget=forms.PasswordInput, label='Подтвердите пароль')
@@ -46,46 +47,27 @@ class UserRegistrationForm(forms.ModelForm):
             )
         return user
 
-class UserProfileForm(forms.ModelForm):
-    avatar = forms.ImageField(required=False)
-
-    class Meta:
-        model = UserProfile
-        fields = ['avatar', 'date_of_birth', 'phone_number', 'email', 'last_name', 'first_name']
-
-    def clean_avatar(self):
-        avatar = self.cleaned_data.get('avatar')
-
-        if avatar:
-            try:
-                w, h = get_image_dimensions(avatar)
-
-                # Validate dimensions
-                max_width = max_height = 100
-                if w > max_width or h > max_height:
-                    raise forms.ValidationError(
-                        u'Пожалуйста, используйте изображение размером '
-                         '%s x %s пикселей или меньше.' % (max_width, max_height))
-
-                # Validate content type
-                main, sub = avatar.content_type.split('/')
-                if not (main == 'image' and sub in ['jpeg', 'pjpeg', 'gif', 'png']):
-                    raise forms.ValidationError(u'Пожалуйста, используйте изображение в формате JPEG, '
-                        'GIF или PNG.')
-
-                # Validate file size
-                if avatar.size > (20 * 1024):  # 20kB
-                    raise forms.ValidationError(
-                        u'Размер файла аватара не может превышать 20 кБ.')
-
-            except AttributeError:
-                # Handles case when we are updating the user profile
-                # and do not supply a new avatar
-                pass
-
-        return avatar
 
 class OrderForm(forms.ModelForm):
     class Meta:
         model = Order
-        fields = ['name', 'email', 'phone_number', 'shipping_address']
+        fields = ['full_name', 'address', 'phone_number', 'email', 'additional_info']
+        labels = {
+            'full_name': 'Полное имя',
+            'address': 'Адрес',
+            'phone_number': 'Телефон',
+            'email': 'Электронная почта',
+            'additional_info': 'Дополнительная информация',
+        }
+        widgets = {
+            'full_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Введите ваше полное имя'}),
+            'address': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Введите ваш адрес'}),
+            'phone_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Введите ваш телефон'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'Введите ваш email'}),
+            'additional_info': forms.Textarea(attrs={'class': 'form-control', 'placeholder': 'Дополнительная информация', 'rows': 3}),
+        }
+
+class UserProfileForm(forms.ModelForm):
+    class Meta:
+        model = UserProfile
+        fields = ['profile_picture', 'date_of_birth', 'phone_number', 'email', 'last_name', 'first_name']

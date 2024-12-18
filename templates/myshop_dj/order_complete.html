@@ -1,39 +1,80 @@
 {% extends 'myshop_dj/base.html' %}
-{% load custom_filters %}
+
+{% load static %}
 
 {% block content %}
-
-<div class="container mt-5">
-    <div class="navigation mb-3">
-        <a href="{% url 'home' %}" class="btn btn-secondary">Вернуться на главную</a>
+<div class="container my-5">
+    <div class="text-center mb-4">
+        <img src="{% static 'images/thank-you.png' %}" alt="Спасибо" class="img-fluid mb-3" style="max-width: 150px;">
+        <h1 class="display-4 text-success">
+            <i class="fas fa-check-circle"></i> Спасибо за ваш заказ!
+        </h1>
+        <p class="lead">
+            Ваш заказ <strong>№{{ order.id }}</strong> на сумму <strong>{{ order.total_price|floatformat:2 }} ₽</strong> успешно оформлен.
+        </p>
     </div>
 
-    <h1>Спасибо за ваш заказ!</h1>
-    <p>Ваш заказ был успешно оформлен. Ниже представлены его детали:</p>
+    <div class="card">
+        <div class="card-header bg-success text-white">
+            <h5 class="mb-0">Детали заказа</h5>
+        </div>
+        <div class="card-body">
+            <p><strong>Дата заказа:</strong> {{ order.created_at|date:"d.m.Y H:i" }}</p>
+            <p><strong>Статус заказа:</strong> <span class="badge bg-primary text-uppercase">{{ order.get_status_display }}</span></p>
+            {% if order.shipping_address %}
+                <p><strong>Адрес доставки:</strong> {{ order.shipping_address }}</p>
+            {% endif %}
 
-    <h2>Детали заказа</h2>
-    <ul class="list-group mb-4">
-        {% if cart_items %}
-            {% for item in cart_items %}
-                <li class="list-group-item">
-                    <strong>{{ item.product.name }}</strong> - {{ item.quantity }} шт. - {{ item.product.price }} руб.
-                    <strong>Итого: {{ item.quantity|multiply:item.product.price }} руб.</strong>
-                </li>
-            {% endfor %}
-        {% else %}
-            <li class="list-group-item">Нет элементов в заказе.</li>
-        {% endif %}
-    </ul>
+            <h5 class="mt-4">Состав заказа:</h5>
+            <div class="table-responsive">
+                <table class="table table-hover mt-3">
+                    <thead class="thead-light">
+                        <tr>
+                            <th>Товар</th>
+                            <th>Количество</th>
+                            <th>Цена за единицу</th>
+                            <th>Сумма</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in order.items.all %}
+                        <tr>
+                            <td>
+                                {% if item.product.image %}
+                                    <img src="{{ item.product.image.url }}" alt="{{ item.product.name }}" width="50" class="me-2">
+                                {% endif %}
+                                {{ item.product.name }}
+                            </td>
+                            <td>{{ item.quantity }}</td>
+                            <td>{{ item.price|floatformat:2 }} ₽</td>
+                            <td>{{ item.total|floatformat:2 }} ₽</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <th colspan="3" class="text-end">Общая сумма:</th>
+                            <th>{{ order.total_price|floatformat:2 }} ₽</th>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
 
-    <h3>Общая стоимость:</h3>
-    <p><strong>{{ total_price }} руб.</strong></p>
+    <div class="text-center mt-4">
+        <a href="{% url 'home' %}" class="btn btn-primary btn-lg">
+            <i class="fas fa-home"></i> Вернуться на главную
+        </a>
+    </div>
 
-    <h2>Информация о доставке</h2>
-    <p><strong>Адрес доставки:</strong> {{ order.shipping_address }}</p>
-    <p><strong>Email для связи:</strong> {{ order.email }}</p>
-    <p><strong>Телефон для связи:</strong> {{ order.phone_number }}</p>
+    <div class="mt-5">
+        <h5>Что будет дальше?</h5>
+        <p>Мы свяжемся с вами для подтверждения заказа и уточнения деталей доставки. Вы можете отслеживать статус вашего заказа в личном кабинете.</p>
+    </div>
 
-    <p class="mt-4">Если у вас есть какие-либо вопросы, пожалуйста, свяжитесь с нашей службой поддержки.</p>
+    <div class="alert alert-info mt-4" role="alert">
+        Если у вас возникли вопросы, свяжитесь с нашей службой поддержки по адресу <a href="mailto:support@myshop.com">support@myshop.com</a>.
+    </div>
 </div>
-
 {% endblock %}

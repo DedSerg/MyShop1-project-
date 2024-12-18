@@ -1,10 +1,12 @@
+import logging
+from django.utils import timezone
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import LoginView
 from django.views.decorators.http import require_POST
 from django.contrib import messages
 from django.views.generic import TemplateView
-from .models import Category, Product, Cart, CartItem, Order, UserProfile
+from .models import Cart, CartItem, Order, OrderItem, Product, Category
 from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, render, redirect
 from django.contrib.auth import login, authenticate
@@ -14,6 +16,9 @@ from rest_framework import generics
 from django.urls import reverse, reverse_lazy
 from django.contrib.auth.decorators import login_required
 from django.db.models import Sum, F
+from django.db import transaction
+
+logger = logging.getLogger(__name__)
 
 
 def home(request):
@@ -70,6 +75,19 @@ def product_detail(request, pk):
     product = get_object_or_404(Product, pk=pk)  # Получаем продукт по первичному ключу
     return render(request, 'myshop_dj/product_detail.html', {'product': product})
 
+def cart_view(request):
+    if request.user.is_authenticated:
+        # Получаем или создаем корзину текущего пользователя
+        cart, created = Cart.objects.get_or_create(user=request.user)
+        # Получаем все элементы корзины для текущей корзины
+        cart_items = CartItem.objects.filter(cart=cart).select_related('product')  # Оптимизация запросов
+        total_price = sum(item.product.price * item.quantity for item in cart_items)
+    else:
+        cart_items = []
+        total_price = 0
+
+    return render(request, 'myshop_dj/cart.html', {'cart_items': cart_items, 'total_price': total_price})
+
 def add_to_cart(request, product_id):
     product = get_object_or_404(Product, id=product_id)
 
@@ -88,19 +106,6 @@ def add_to_cart(request, product_id):
         cart_item.save()  # Сохраняем изменения
 
     return redirect('cart_view')  # Перенаправляем на страницу корзины
-
-def cart_view(request):
-    if request.user.is_authenticated:
-        # Получаем или создаем корзину текущего пользователя
-        cart, created = Cart.objects.get_or_create(user=request.user)
-        # Получаем все элементы корзины для текущей корзины
-        cart_items = CartItem.objects.filter(cart=cart).select_related('product')  # Оптимизация запросов
-        total_price = sum(item.product.price * item.quantity for item in cart_items)
-    else:
-        cart_items = []
-        total_price = 0
-
-    return render(request, 'myshop_dj/cart.html', {'cart_items': cart_items, 'total_price': total_price})
 
 def update_cart(request, product_id):
     if request.method == 'POST':
@@ -181,18 +186,27 @@ class CustomLoginView(LoginView):
 class ProfileView(LoginRequiredMixin, TemplateView):
     template_name = 'myshop_dj/profile.html'  # Укажите ваш шаблон для профиля
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['user'] = self.request.user  # Добавляем текущего пользователя в контекст
+        return context
+
+@login_required
 def profile_view(request):
-    user_profile, created = UserProfile.objects.get_or_create(user=request.user)  # Получение или создание профиля
+    profile = request.user.profile  # Теперь доступно через related_name='profile'
+    return render(request, 'myshop_dj/profile.html', {'profile': profile})
 
+@login_required
+def edit_profile(request):
+    profile = request.user.profile
     if request.method == 'POST':
-        form = UserProfileForm(request.POST, request.FILES, instance=user_profile)  # Обработка формы
+        form = UserProfileForm(request.POST, request.FILES, instance=profile)
         if form.is_valid():
-            form.save()  # Сохранение формы
-            return redirect('profile')  # Перенаправление на страницу профиля
+            form.save()
+            return redirect('profile')
     else:
-        form = UserProfileForm(instance=user_profile)  # Заполнение формы существующими данными
-
-    return render(request, 'myshop_dj/profile.html', {'user': request.user, 'user_profile': user_profile, 'form': form})
+        form = UserProfileForm(instance=profile)
+    return render(request, 'myshop_dj/edit_profile.html', {'form': form})
 
 def get_context_data(self, **kwargs):
     context = super().get_context_data(**kwargs)
@@ -200,17 +214,55 @@ def get_context_data(self, **kwargs):
     return context
 
 
+@login_required
 def checkout_view(request):
+    user = request.user
+    cart_items = []
+
+    # Получаем корзину пользователя
+    try:
+        cart = Cart.objects.get(user=user)
+        cart_items = cart.items.all()
+    except Cart.DoesNotExist:
+        messages.error(request, 'У вас нет товаров в корзине.')
+        return redirect('product_list')
+
+    # Вычисляем общую стоимость
+    total_price = sum(item.total_price for item in cart_items)
+
     if request.method == 'POST':
         form = OrderForm(request.POST)
         if form.is_valid():
-            order = form.save()  # Сохраняем заказ
+            with transaction.atomic():
+                order = form.save(commit=False)
+                order.user = user
+                order.total_price = total_price
+                order.save()
+
+                for item in cart_items:
+                    OrderItem.objects.create(
+                        order=order,
+                        product=item.product,
+                        quantity=item.quantity,
+                        price=item.product.price
+                    )
+
+                cart.items.all().delete()
+
             messages.success(request, 'Ваш заказ успешно оформлен!')
-            return redirect('category_list')  # Перенаправление на страницу покупок
+            return redirect('order_complete', order_id=order.id)
+        else:
+            messages.error(request, 'Пожалуйста, исправьте ошибки в форме.')
     else:
         form = OrderForm()
 
-    return render(request, 'myshop_dj/checkout.html', {'form': form})
+    context = {
+        'cart_items': cart_items,
+        'total_price': total_price,
+        'form': form,
+    }
+
+    return render(request, 'myshop_dj/checkout.html', context)
 
 
 @require_POST  # Ограничение на прием только POST-запросов
@@ -229,19 +281,10 @@ def process_order(request):
     return render(request, 'myshop_dj/checkout.html', {'form': form})
 
 
+@login_required
 def order_complete(request, order_id):
-    # Получаем заказ по ID или возвращаем 404, если не найден
-    order = get_object_or_404(Order, id=order_id)
-
-    # Вычисляем общую стоимость на основе quantity и product.price
-    total_price = order.items.aggregate(
-        total=Sum(F('quantity') * F('product__price'))
-    )['total'] or 0  # Используем 0, если нет элементов
-
-    # Формируем контекст для передачи в шаблон
+    order = get_object_or_404(Order, id=order_id, user=request.user)
     context = {
         'order': order,
-        'total_price': total_price,
     }
-
     return render(request, 'myshop_dj/order_complete.html', context)
