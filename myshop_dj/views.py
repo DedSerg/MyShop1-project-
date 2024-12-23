@@ -1,25 +1,22 @@
 import logging
-from django.utils import timezone
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import LoginView
-from django.views.decorators.http import require_POST
 from django.contrib import messages
 from django.views.generic import TemplateView
-from .models import Cart, CartItem, Order, OrderItem, Product, Category
+from .models import Cart, CartItem, Order, OrderItem, Product, Category, UserProfile
 from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, render, redirect
 from django.contrib.auth import login, authenticate
 from .forms import UserRegistrationForm, OrderForm, UserProfileForm
-from .serializers import CategorySerializer, ProductSerializer
-from rest_framework import generics
+from .serializers import CategorySerializer, ProductSerializer, UserProfileSerializer
+from rest_framework import generics, permissions
 from django.urls import reverse, reverse_lazy
 from django.contrib.auth.decorators import login_required
-from django.db.models import Sum, F
 from django.db import transaction
 
-logger = logging.getLogger(__name__)
 
+logger = logging.getLogger(__name__)
 
 def home(request):
     categories = Category.objects.all()  # Получаем все категории
@@ -47,6 +44,25 @@ def category_detail_view(request, category_id):
         'category': category,
         'page_obj': page_obj,
     })
+
+
+class UserProfileListCreateView(generics.ListCreateAPIView):
+    queryset = UserProfile.objects.all()
+    serializer_class = UserProfileSerializer
+    permission_classes = [permissions.IsAuthenticated]  # Доступ только для аутентифицированных пользователей
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)  # Устанавливаем текущего пользователя как владельца профиля
+
+
+class UserProfileDetailView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = UserProfile.objects.all()
+    serializer_class = UserProfileSerializer
+    permission_classes = [permissions.IsAuthenticated]  # Доступ только для аутентифицированных пользователей
+
+    def get_queryset(self):
+        # Фильтрация профиля по текущему пользователю
+        return self.queryset.filter(user=self.request.user)
 
 def category_list(request):
     categories = Category.objects.all()  # Извлечение всех категорий из базы данных
@@ -149,7 +165,13 @@ def register(request):
         form = UserRegistrationForm(request.POST)
 
         if form.is_valid():
-            user = form.save()  # Сохраняем пользователя
+            user = form.save(commit=False)  # Сохраняем пользователя, но не коммитим в БД
+            user.set_password(form.cleaned_data['password'])  # Устанавливаем зашифрованный пароль
+            user.save()  # Теперь сохраняем пользователя в БД
+
+            # Создаем профиль пользователя
+            UserProfile.objects.create(user=user)  # Создаем пустой профиль
+
             login(request, user)  # Автоматически входим в систему после регистрации
 
             # Приветственное сообщение
@@ -158,7 +180,6 @@ def register(request):
     else:
         form = UserRegistrationForm()  # Создаем пустую форму, если это GET-запрос
 
-    # Рендерим страницу регистрации с формой
     return render(request, 'myshop_dj/register.html', {'form': form})
 
 def login_view(request):
@@ -180,32 +201,39 @@ def login_view(request):
 
 class CustomLoginView(LoginView):
     template_name = 'myshop_dj/login.html'
-    success_url = reverse_lazy('profile')  # Укажите имя URL для перенаправления
-
+    success_url = reverse_lazy('profile')  #  Имя URL для перенаправления
 
 class ProfileView(LoginRequiredMixin, TemplateView):
     template_name = 'myshop_dj/profile.html'  # Укажите ваш шаблон для профиля
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['user'] = self.request.user  # Добавляем текущего пользователя в контекст
-        return context
-
 @login_required
 def profile_view(request):
-    profile = request.user.profile  # Теперь доступно через related_name='profile'
-    return render(request, 'myshop_dj/profile.html', {'profile': profile})
+    # Получаем профиль пользователя
+    profile = request.user.profile  # Доступ через related_name='profile'
+
+    # Проверяем наличие изображения профиля
+    profile_picture_url = profile.profile_picture.url if profile.profile_picture and profile.profile_picture.name else 'default_image_url'  # URL изображения по умолчанию
+
+    return render(request, 'myshop_dj/profile.html', {
+        'profile': profile,
+        'profile_picture_url': profile_picture_url,
+    })
 
 @login_required
 def edit_profile(request):
-    profile = request.user.profile
+    # Получаем профиль пользователя
+    profile = get_object_or_404(UserProfile, user=request.user)
+
     if request.method == 'POST':
+        # Заполняем форму данными из POST-запроса
         form = UserProfileForm(request.POST, request.FILES, instance=profile)
         if form.is_valid():
-            form.save()
-            return redirect('profile')
+            form.save()  # Сохраняем изменения в профиле
+            return redirect('profile')  # Перенаправляем на страницу профиля
     else:
+        # Если не POST-запрос, заполняем форму существующими данными профиля
         form = UserProfileForm(instance=profile)
+
     return render(request, 'myshop_dj/edit_profile.html', {'form': form})
 
 def get_context_data(self, **kwargs):
@@ -217,12 +245,12 @@ def get_context_data(self, **kwargs):
 @login_required
 def checkout_view(request):
     user = request.user
-    cart_items = []
 
     # Получаем корзину пользователя
     try:
         cart = Cart.objects.get(user=user)
         cart_items = cart.items.all()
+
     except Cart.DoesNotExist:
         messages.error(request, 'У вас нет товаров в корзине.')
         return redirect('product_list')
@@ -235,18 +263,25 @@ def checkout_view(request):
         if form.is_valid():
             with transaction.atomic():
                 order = form.save(commit=False)
-                order.user = user
+                order.user = request.user
                 order.total_price = total_price
                 order.save()
 
                 for item in cart_items:
+                    total_item_price = item.quantity * item.product.price  # Вычисляем общую цену для данного элемента
                     OrderItem.objects.create(
                         order=order,
                         product=item.product,
                         quantity=item.quantity,
-                        price=item.product.price
+                        price=item.product.price,
+                        total_price=total_item_price  # Устанавливаем общую цену
                     )
 
+                    # Уменьшаем количество на складе
+                    item.product.stock -= item.quantity
+                    item.product.save()
+
+                # Очистка корзины
                 cart.items.all().delete()
 
             messages.success(request, 'Ваш заказ успешно оформлен!')
@@ -264,27 +299,15 @@ def checkout_view(request):
 
     return render(request, 'myshop_dj/checkout.html', context)
 
-
-@require_POST  # Ограничение на прием только POST-запросов
-def process_order(request):
-    form = OrderForm(request.POST)
-
-    if form.is_valid():
-        order = form.save(commit=False)
-        order.user = request.user  # Привязка заказа к текущему пользователю
-        order.save()
-
-        # Редирект на страницу завершения заказа, передавая order.id
-        return redirect('order_complete', order_id=order.id)  # Передаем order.id
-
-    # Если форма не валидна, возвращаем её на страницу с ошибками
-    return render(request, 'myshop_dj/checkout.html', {'form': form})
-
-
 @login_required
 def order_complete(request, order_id):
     order = get_object_or_404(Order, id=order_id, user=request.user)
+
+    # Суммируем total_price всех связанных OrderItem
+    total_price = sum(item.total_price for item in order.items.all())
+
     context = {
         'order': order,
+        'total_price': total_price,
     }
     return render(request, 'myshop_dj/order_complete.html', context)

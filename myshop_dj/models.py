@@ -1,9 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
-from django.db.models.signals import post_save
-from django.dispatch import receiver
-
 
 # Модель Категории
 class Category(models.Model):
@@ -14,6 +11,7 @@ class Category(models.Model):
     def __str__(self):
         return self.name
 
+
 # Модель Корзины
 class Cart(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
@@ -22,12 +20,13 @@ class Cart(models.Model):
     def __str__(self):
         return f"Cart of {self.user.username}"
 
+
 # Модель Продукта
 class Product(models.Model):
     name = models.CharField(max_length=255, unique=True)
     description = models.TextField()
     price = models.DecimalField(max_digits=10, decimal_places=2)
-    category = models.ForeignKey('Category', related_name='products', on_delete=models.CASCADE)
+    category = models.ForeignKey(Category, related_name='products', on_delete=models.CASCADE, null=True)  # Измените на Category
     image = models.ImageField(upload_to='products/', blank=True, null=True)
     stock = models.PositiveIntegerField()
 
@@ -42,6 +41,7 @@ class Product(models.Model):
             raise ValidationError('Цена не может быть отрицательной.')
         if self.stock < 0:
             raise ValidationError('Количество на складе не может быть отрицательным.')
+
 
 # Модель Элемента Корзины
 class CartItem(models.Model):
@@ -66,6 +66,7 @@ class CartItem(models.Model):
     def total_price(self):
         return self.product.price * self.quantity
 
+
 # Модель Заказа
 class Order(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='orders')
@@ -75,9 +76,16 @@ class Order(models.Model):
     email = models.EmailField()
     additional_info = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    STATUS_CHOICES = [
+        ('pending', 'В ожидании'),
+        ('completed', 'Завершён'),
+        ('canceled', 'Отменён'),
+    ]
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')
 
     def __str__(self):
         return f'Заказ #{self.id} от {self.user.username}'
+
 
 # Модель Элемента Заказа
 class OrderItem(models.Model):
@@ -85,12 +93,17 @@ class OrderItem(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     quantity = models.PositiveIntegerField()
     price = models.DecimalField(max_digits=10, decimal_places=2, default=0)  # Цена на момент заказа
+    total_price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+
     def __str__(self):
         return f"{self.quantity} x {self.product.name}"
 
+
+
 class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
-    profile_picture = models.ImageField(upload_to='profile_pictures/', default='default.jpg')  # Укажите путь для загрузки изображений
+    profile_picture = models.ImageField(upload_to='profile_pictures/',
+                                        blank=True, null=True)  # Укажите путь для загрузки изображений
     date_of_birth = models.DateField(null=True, blank=True)  # Поле для даты рождения
     phone_number = models.CharField(max_length=15, null=True, blank=True)  # Поле для телефона
     email = models.EmailField(max_length=254, null=True, blank=True)  # Поле для электронной почты
@@ -99,10 +112,3 @@ class UserProfile(models.Model):
 
     def __str__(self):
         return f"{self.user.username}'s Profile"
-
-
-@receiver(post_save, sender=User)
-def create_or_update_user_profile(sender, instance, created, **kwargs):
-    if created:
-        UserProfile.objects.create(user=instance)
-    instance.profile.save()

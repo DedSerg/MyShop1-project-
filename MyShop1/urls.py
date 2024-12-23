@@ -22,6 +22,7 @@ from django.conf.urls.static import static
 
 
 
+
 urlpatterns = [
     path('admin/', admin.site.urls),  # URL для админки
     path('', include('myshop_dj.urls')),  # Подключение URL вашего приложения

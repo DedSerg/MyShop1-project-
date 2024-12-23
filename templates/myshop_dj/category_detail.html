@@ -6,9 +6,8 @@
 {% block content %}
 <div class="container" style="position: relative; min-height: 300px;">
     <div class="navigation d-flex justify-content-end mb-3" style="position: absolute; top: 5px; right: 1px;"> <!-- Измените на flex-row -->
-        <a href="{% url 'cart_view' %}" class="btn btn-primary mr-2">Заглянем в авоську</a>
-        <a href="{% url 'home' %}" class="btn btn-secondary mr-2">Вернуться на главную</a>
-        <a href="{% url 'category_list' %}" class="btn btn-primary">К выбору категорий</a>
+        <a href="{% url 'cart_view' %}" class="btn btn-primary mr-2">Ваша авоська</a>
+
     </div>
 
     <h1 class="text-left" style="font-size: 1.5rem;">{{ category.name }}</h1> <!-- Уменьшение размера шрифта и выравнивание -->

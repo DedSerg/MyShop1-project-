@@ -4,11 +4,9 @@ register = template.Library()
 
 
 @register.filter
-
 def add_class_and_placeholder(field, css_class):
     """Добавляет CSS класс и placeholder к полю формы."""
     return field.as_widget(attrs={"class": css_class, "placeholder": field.label})
-
 
 
 @register.filter

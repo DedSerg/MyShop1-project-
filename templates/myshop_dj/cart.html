@@ -1,13 +1,13 @@
 {% extends 'myshop_dj/base.html' %}
 {% load static %}
 {% load custom_filters %}  <!-- Загрузка пользовательских фильтров -->
-{% block title %}Корзина покупок{% endblock %}
+{% block title %}Корзина{% endblock %}
 
 {% block content %}
-<h1>Корзина покупок</h1>
+<h1>Ваша авоська</h1>
 
 <div class="navigation mb-3">
-    <a href="{% url 'home' %}" class="btn btn-secondary">Вернуться на главную</a>
+
 
 </div>
 
@@ -54,12 +54,12 @@
             <button type="submit" class="btn btn-success">Оформить заказ</button>
         </form>
     {% else %}
-        <p>Ваша корзина пуста. <a href="{% url 'category_list' %}">Прилавок</a></p>
+        <p>Ваша корзина пуста. <a href="{% url 'category_list' %}">Вернуться к прилавку</a></p>
     {% endif %}
 </main>
 
 <div class="footer-navigation mt-4">
-    <a href="{% url 'category_list' %}" class="btn btn-primary">Продолжить покупки</a>
+
 </div>
 
 {% endblock %}

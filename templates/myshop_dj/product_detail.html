@@ -20,15 +20,11 @@
         <button type="submit" class="add-to-cart-button">Кидай в авоську</button>
     </form>
 
-     <div class="container" style="position: relative; min-height: 300px;"> <!-- Добавьте min-height для видимости -->
+    <div class="container" style="position: relative; min-height: 300px;"> <!-- Добавьте min-height для видимости -->
         <div class="navigation mb-3 d-flex flex-column align-items-end" style="position: absolute; top: 10px; right: 10px;">
             <a href="{% url 'cart_view' %}" class="btn btn-primary mb-2">Заглянем в авоську</a>
-            <a href="{% url 'home' %}" class="btn btn-secondary mb-2">Вернуться на главную</a>
-            <a href="{% url 'category_list' %}" class="btn btn-primary">К выбору категорий</a>
+
+
         </div>
     </div>
-    </div>
-    </div>
-
-
 {% endblock %}

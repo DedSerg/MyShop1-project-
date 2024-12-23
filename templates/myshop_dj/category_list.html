@@ -1,8 +1,7 @@
-
 {% extends 'myshop_dj/base.html' %}
 
 {% load static %}
-{% block title %}Список категорий{% endblock %}
+{% block title %}Наш прилавок{% endblock %}
 
 {% block content %}
     <h1 class="mt-5">Прилавок</h1>
@@ -19,7 +18,7 @@
         {% endfor %}
     </ul>
     <div class="d-flex justify-content-between mt-4"> <!-- Flexbox для выравнивания кнопок -->
-        <a href="{% url 'home' %}" class="btn btn-secondary ">Вернуться на главную страницу</a>
-        <a href="{% url 'cart_view' %}" class="btn btn-primary">Заглянем в авоську</a>
+
+        <a href="{% url 'cart_view' %}" class="btn btn-primary">Ваша авоська</a>
     </div>
 {% endblock %}
