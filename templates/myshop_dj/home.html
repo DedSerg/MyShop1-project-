@@ -1,4 +1,3 @@
-
 {% extends 'myshop_dj/base.html' %}
 
 {% load static %}
@@ -6,19 +5,80 @@
 {% block title %}Главная страница{% endblock %}
 
 {% block content %}
-    <h1 class="mt-5">Добро пожаловать!</h1>
-    <p class="lead">Только самые свежие фермерские продукты.</p>
-
+    <h1 class="mt-5 text-primary">Добро пожаловать в мир свежести!</h1>
+    <p class="lead large-text text-info">Откройте для себя только самые свежие и качественные фермерские продукты, которые поднимут ваше настроение и укрепят здоровье.</p>
 
     <!-- Подключение CSS -->
     <link rel="stylesheet" type="text/css" href="{% static 'style.css' %}">
     <br><br>
-    <p class="lead">Пожалуйста, войдите или зарегистрируйтесь, чтобы продолжить.</p>
+    <p class="lead large-text text-success">Не упустите возможность! Войдите или зарегистрируйтесь, чтобы начать свое путешествие к здоровому образу жизни.</p>
     <div class="button-container d-flex justify-content-center">
-    <a href="{% url 'register' %}" class="btn btn-success mx-2">Регистрация</a>
+        <a href="{% url 'register' %}" class="btn btn-success mx-2">Регистрация</a>
+    </div>
 
-   </div>
+    <!-- Секция "Почему выбирают нас?" -->
+    <section class="features mt-5">
+    <div class="container">
+        <h3 class="text-center text-primary font-weight-bold">Почему выбирают нас?</h3>
+        <div class="row mt-4">
+            <div class="col-md-4">
+                <div class="card shadow-lg border-0 rounded">
+                    <img src="{% static 'images/feature1.jpg' %}" class="card-img-top rounded-top" alt="Качество">
+                    <div class="card-body text-center">
+                        <h5 class="card-title text-dark font-weight-bold">Качество на первом месте</h5>
+                        <p class="card-text small-text text-muted">Мы предлагаем только отборные продукты, которые прошли строгий контроль качества. Доверьтесь нам и наслаждайтесь каждым укусом!</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card shadow-lg border-0 rounded">
+                    <img src="{% static 'images/feature2.jpg' %}" class="card-img-top rounded-top" alt="Доступные цены">
+                    <div class="card-body text-center">
+                        <h5 class="card-title text-dark font-weight-bold">Доступные цены для всех</h5>
+                        <p class="card-text small-text text-muted">Мы верим, что качественные продукты должны быть доступны каждому. У нас вы найдете отличные предложения и скидки!</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card shadow-lg border-0 rounded">
+                    <img src="{% static 'images/feature3.jpg' %}" class="card-img-top rounded-top" alt="Поддержка">
+                    <div class="card-body text-center">
+                        <h5 class="card-title text-dark font-weight-bold">Поддержка, на которую можно положиться</h5>
+                        <p class="card-text small-text text-muted">Наша команда всегда готова помочь вам с любыми вопросами. Мы заботимся о каждом клиенте и готовы ответить на все ваши запросы!</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
 
-
+<style>
+    .features {
+        background-color: #f8f9fa; /* Светлый фон для секции */
+        padding: 30px 0;
+        border-radius: 10px;
+    }
+    .card {
+        transition: transform 0.3s; /* Плавный эффект при наведении */
+    }
+    .card:hover {
+        transform: translateY(-10px); /* Подъем карты при наведении */
+    }
+    .small-text {
+        font-size: 0.9rem; /* Уменьшаем размер шрифта */
+    }
+</style>
 
 {% endblock %}
+
+<style>
+
+     .large-text {
+        font-size: 1.5rem; /* Увеличиваем размер шрифта */
+        font-weight: bold; /* Делаем текст жирным */
+    }
+
+    .small-text {
+        font-size: 0.5rem; /* Уменьшаем размер шрифта */
+    }
+</style>
